@@ -1,5 +1,7 @@
 #include <iostream>
+#include <libs.hpp>
 
-int main(int, char**){
-    std::cout << "Hello, from competition!\n";
+int main(int, char**) {
+    start_interaction();
+    return 0;
 }

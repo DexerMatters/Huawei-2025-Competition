@@ -3,3 +3,4 @@ CMakePresets.json
 build/
 CMakeFiles/
 CMakeCache.txt
+docs/
