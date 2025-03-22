@@ -2,6 +2,8 @@
 #include <libs.hpp>
 
 int main(int, char**) {
-    start_interaction();
+    std::cout << "Hello, world!\n";
+    request_initalization();
+    request_write();
     return 0;
 }

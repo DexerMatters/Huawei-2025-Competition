@@ -1,106 +1,130 @@
+#ifndef LIBS_HPP
+#define LIBS_HPP
+
 #include <iostream>
+#include <vector>
+#include <array>
 
 
-#define MAX_DISK_NUM (10 + 1)
-#define MAX_DISK_SIZE (16384 + 1)
-#define MAX_REQUEST_NUM (30000000 + 1)
-#define MAX_OBJECT_NUM (100000 + 1)
-#define REP_NUM (3)
-#define FRE_PER_SLICING (1800)
-#define EXTRA_TIME (105)
 
-struct Request
+constexpr auto MAX_DISK_NUM = (10 + 1);
+constexpr auto MAX_DISK_SIZE = (16384 + 1);
+constexpr auto MAX_REQUEST_NUM = (30000000 + 1);
+constexpr auto MAX_OBJECT_NUM = (100000 + 1);
+constexpr auto REP_NUM = (3);
+constexpr auto FRE_PER_SLICING(1800);
+constexpr auto EXTRA_TIME(105);
+
+#define rep_char(c, n) std::string(n, c)
+
+
+template <size_t N>
+using iarray = std::array<int, N>;
+
+using ivector = std::vector<int>;
+
+typedef struct Request_
 {
     int object_id;
-    int prev_id;
+    int prev_req_id;
     bool is_done;
-};
+} Request;
 
-struct Object
+typedef struct Object_
 {
     int replica[REP_NUM + 1];
     int* unit[REP_NUM + 1];
     int size;
-    int last_request_point;
     bool is_delete;
-};
+} Object;
 
-Request request[MAX_REQUEST_NUM];
-Object object[MAX_OBJECT_NUM];
+extern Request request[MAX_REQUEST_NUM];
+extern Object object[MAX_OBJECT_NUM];
 
+extern int request_count;
 
 // Count of timestamps in the input
-int T;
+extern int T;
 
 // Count of object tags
-int M;
+extern int M;
 
 // Disk count
-int N;
+extern int N;
 
 // Unit count per disk
-int V;
+extern int V;
 
 // Maximum token consumption per timestamp
-int G;
+extern int G;
 
 
 // Disk data
-int disk[MAX_DISK_NUM][MAX_DISK_SIZE];
+extern int disk[MAX_DISK_NUM][MAX_DISK_SIZE];
 
 // Disk data pointer
-int disk_point[MAX_DISK_NUM];
+extern int disk_point[MAX_DISK_NUM];
 
+// Disk partition size
+extern int partition_size;
+
+
+extern std::vector<ivector> fre_del;
+
+extern std::vector<ivector> fre_write;
+
+extern std::vector<ivector> fre_read;
 
 
 /****************************************************************************************
  * Interaction functions
  ****************************************************************************************/
 
- // Initialize the environment
-void start_interaction();
+void request_initalization();
+
+void request_freq_init();
 
 // Request a timestamp
 void request_timestamp();
+
+// Request a write operation
+void request_write();
+
+void request_delete();
 
 
 /****************************************************************************************
  * Action functions
  ****************************************************************************************/
 
- /**
-  * Create a new object with the specified size
-  * @param object_id Object ID
-  * @param size Object size
-  */
-Object new_object(int object_id, int size);
-
-/**
- * Jump to the specified location in the disk
- * @param disk_id Disk ID
- * @param dest Destination unit
- * @warning A jump costs `G` tokens
- */
-void jump(int disk_id, int dest);
-
-/**
- * Read the data in the current location from the disk.
- * Pointer will be moved to the next unit after reading.
- * @param disk_id Disk ID
- * @return Data read from the disk
- * @warning A read costs `1` token
- */
-int read(int disk_id);
-
-/**
- * Pass the disk to the next unit.
- * Pointer will be moved to the next unit after passing.
- * @param disk_id Disk ID
- * @warning A pass costs `1` token
- */
-void pass(int disk_id);
-
-/**
- * Clean up all the allocated memory
- */
 void cleanAll();
+
+// Write action
+
+Object write(int object_id, int object_tag, int object_size);
+
+iarray<REP_NUM + 1> alloc_replica_disk_ids(int object_id, int object_tag);
+
+ivector alloc_unit_indices(int object_id, int object_tag, int object_size, int disk_id);
+
+// Delete action
+
+ivector del(int object_id);
+
+void release_unit(int object_id);
+
+// Read action
+
+void make_read_request(int req_id, int object_id);
+
+std::string read(int object_id, int req_id);
+
+void move_point(int disk_id);
+
+/****************************************************************************************
+ * Auxiliary functions
+ ****************************************************************************************/
+
+void scan_numbers(ivector& vector);
+
+#endif // LIBS_HPP
