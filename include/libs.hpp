@@ -5,8 +5,6 @@
 #include <vector>
 #include <array>
 
-
-
 constexpr auto MAX_DISK_NUM = (10 + 1);
 constexpr auto MAX_DISK_SIZE = (16384 + 1);
 constexpr auto MAX_REQUEST_NUM = (30000000 + 1);
@@ -17,6 +15,9 @@ constexpr auto EXTRA_TIME(105);
 
 #define rep_char(c, n) std::string(n, c)
 
+#if defined(__linux__) || defined(__APPLE__)
+#define scanf_s scanf
+#endif
 
 template <size_t N>
 using iarray = std::array<int, N>;
@@ -33,7 +34,7 @@ typedef struct Request_
 typedef struct Object_
 {
     int replica[REP_NUM + 1];
-    int* unit[REP_NUM + 1];
+    int *unit[REP_NUM + 1];
     int size;
     bool is_delete;
 } Object;
@@ -58,7 +59,6 @@ extern int V;
 // Maximum token consumption per timestamp
 extern int G;
 
-
 // Disk data
 extern int disk[MAX_DISK_NUM][MAX_DISK_SIZE];
 
@@ -68,13 +68,11 @@ extern int disk_point[MAX_DISK_NUM];
 // Disk partition size
 extern int partition_size;
 
-
 extern std::vector<ivector> fre_del;
 
 extern std::vector<ivector> fre_write;
 
 extern std::vector<ivector> fre_read;
-
 
 /****************************************************************************************
  * Interaction functions
@@ -91,7 +89,6 @@ void request_timestamp();
 void request_write();
 
 void request_delete();
-
 
 /****************************************************************************************
  * Action functions
@@ -125,6 +122,6 @@ void move_point(int disk_id);
  * Auxiliary functions
  ****************************************************************************************/
 
-void scan_numbers(ivector& vector);
+void scan_numbers(ivector &vector);
 
 #endif // LIBS_HPP

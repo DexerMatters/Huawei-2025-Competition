@@ -6,7 +6,6 @@ ivector del(int object_id) {
     for (int i = request_count; i >= 1; i--) {
         if (request[i].object_id == object_id && !request[i].is_done) {
             request[i].is_done = true;
-            request[i].prev_req_id = 0;
 
             aborted_requests.push_back(i);
 
@@ -17,7 +16,10 @@ ivector del(int object_id) {
                     break;
                 }
             }
+
+            request[i].prev_req_id = 0;
         }
+    }
 }
 
 
@@ -28,5 +30,6 @@ void release_unit(int object_id) {
             continue;
         for (int j = 1; j <= obj.size; j++) {
             disk[obj.replica[i]][obj.unit[i][j]] = 0;
+        }
     }
 }

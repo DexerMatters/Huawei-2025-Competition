@@ -1,6 +1,5 @@
-#include <libs.hpp>
 #include <algorithm>
-
+#include <libs.hpp>
 
 void cleanAll() {
     for (auto& obj : object) {
@@ -34,13 +33,13 @@ Object write(int object_id, int object_tag, int object_size) {
 
 iarray<REP_NUM + 1> alloc_replica_disk_ids(int object_id, int object_tag) {
     static int replica_disk_start = 0;
-    int disk_start = replica_disk_start++;
-    iarray<REP_NUM + 1> arr {
+    replica_disk_start += 3;
+    int disk_start = replica_disk_start;
+    iarray<REP_NUM + 1> arr{
         0,
-        disk_start == 0 ? 1 : disk_start % N + 1,
+        disk_start % N + 1,
         (disk_start + 1) % N + 1,
-        (disk_start + 2) % N + 1
-    };
+        (disk_start + 2) % N + 1 };
     return arr;
 }
 

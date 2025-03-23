@@ -1,6 +1,10 @@
 #include <libs.hpp>
 #include <sstream>
 
+#if defined(__linux__) || defined(__APPLE__)
+#include <iterator>
+#endif
+
 int request_count = 0;
 
 int T = 0;
