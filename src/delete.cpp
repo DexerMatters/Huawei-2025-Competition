@@ -6,18 +6,8 @@ ivector del(int object_id) {
     for (int i = request_count; i >= 1; i--) {
         if (request[i].object_id == object_id && !request[i].is_done) {
             request[i].is_done = true;
-
+            delete_recorded_request(i);
             aborted_requests.push_back(i);
-
-            // Find the next undone request
-            for (int j = i + 1; j <= request_count; j++) {
-                if (!request[j].is_done) {
-                    request[j].prev_req_id = request[i].prev_req_id;
-                    break;
-                }
-            }
-
-            request[i].prev_req_id = 0;
         }
     }
 }

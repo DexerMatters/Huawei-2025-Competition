@@ -4,14 +4,28 @@
 #include <iostream>
 #include <vector>
 #include <array>
+#include <queue>
+#include <list>
+
+template <size_t N>
+using iarray = std::array<int, N>;
+
+using ivector = std::vector<int>;
+using bvector = std::vector<bool>;
 
 constexpr auto MAX_DISK_NUM = (10 + 1);
 constexpr auto MAX_DISK_SIZE = (16384 + 1);
 constexpr auto MAX_REQUEST_NUM = (30000000 + 1);
 constexpr auto MAX_OBJECT_NUM = (100000 + 1);
 constexpr auto REP_NUM = (3);
-constexpr auto FRE_PER_SLICING(1800);
-constexpr auto EXTRA_TIME(105);
+constexpr auto FRE_PER_SLICING = (1800);
+constexpr auto EXTRA_TIME = (105);
+constexpr iarray<128> READING_COSTS =
+{
+    0, 64, 16, 13, 11, 9, 8, 7, 6, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+};
 
 #define rep_char(c, n) std::string(n, c)
 
@@ -19,28 +33,26 @@ constexpr auto EXTRA_TIME(105);
 #define scanf_s scanf
 #endif
 
-template <size_t N>
-using iarray = std::array<int, N>;
-
-using ivector = std::vector<int>;
-
-typedef struct Request_
+struct Request
 {
     int object_id;
-    int prev_req_id;
+    bvector process;
     bool is_done;
-} Request;
+};
 
-typedef struct Object_
+struct Object
 {
     int replica[REP_NUM + 1];
-    int *unit[REP_NUM + 1];
+    int* unit[REP_NUM + 1];
     int size;
     bool is_delete;
-} Object;
+};
+
 
 extern Request request[MAX_REQUEST_NUM];
 extern Object object[MAX_OBJECT_NUM];
+
+extern ivector tokens;
 
 extern int request_count;
 
@@ -68,6 +80,11 @@ extern int disk_point[MAX_DISK_NUM];
 // Disk partition size
 extern int partition_size;
 
+
+// Ordered requests
+
+extern std::vector<std::list<int>> ordered_requests;
+
 extern std::vector<ivector> fre_del;
 
 extern std::vector<ivector> fre_write;
@@ -89,6 +106,8 @@ void request_timestamp();
 void request_write();
 
 void request_delete();
+
+void request_read();
 
 /****************************************************************************************
  * Action functions
@@ -114,14 +133,24 @@ void release_unit(int object_id);
 
 void make_read_request(int req_id, int object_id);
 
-std::string read(int object_id, int req_id);
-
-void move_point(int disk_id);
+std::pair<std::vector<std::string>, ivector> read(int object_id, int req_id);
 
 /****************************************************************************************
  * Auxiliary functions
  ****************************************************************************************/
 
-void scan_numbers(ivector &vector);
+void scan_numbers(ivector& vector);
 
-#endif // LIBS_HPP
+void reset_tokens();
+
+int calculate_distance(int point, int dest);
+
+bool is_farther_than(int dest1, int dest2);
+
+void record_request(int req_id);
+
+void delete_recorded_request(int req_id);
+
+bool process_request(int disk_id, int req_id);
+
+#endif // !LIBS_HPP

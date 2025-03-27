@@ -1,4 +1,5 @@
 #include <libs.hpp>
+#include <sstream>
 
 #if defined(__linux__) || defined(__APPLE__)
 #include <math.h>
@@ -9,6 +10,13 @@ void request_initalization()
 {
     scanf_s("%d %d %d %d %d", &T, &M, &N, &V, &G);
     partition_size = V / M;
+
+    ordered_requests = std::vector<std::list<int>>(N + 1, std::list<int>());
+    tokens = ivector(N + 1, G);
+
+    // Fill the disk with zeros
+    for (int i = 1; i <= N; i++)
+        std::fill(disk[i], disk[i] + V + 1, 0);
 
     // fre_xx is a 2D array
     // fre_xx[1][1] ... fre_xx[M][ceil(T/1800)]
@@ -45,6 +53,8 @@ void request_freq_init()
     // Read fre_read
     for (int i = 1; i <= M; i++)
         scan_numbers(fre_read[i]);
+
+    std::cout.flush();
 }
 
 void request_timestamp()
@@ -109,5 +119,32 @@ void request_delete()
     for (auto req : aborted_requests)
     {
         std::cout << req << '\n';
+    }
+}
+
+void request_read() {
+    int n_read;
+    ivector req_ids;
+    ivector object_ids;
+    scanf_s("%d", &n_read);
+
+    for (int i = 1; i <= n_read; i++) {
+        int object_id;
+        int req_id;
+        scanf_s("%d %d", &req_id, &object_id);
+
+        req_ids.push_back(req_id);
+        object_ids.push_back(object_id);
+    }
+
+    for (int j = 0; j < n_read; j++) {
+        auto [actions, completed_reqs] = read(object_ids[j], req_ids[j]);
+        for (auto& action : actions) {
+            std::cout << action;
+        }
+        std::cout << completed_reqs.size() << '\n';
+        for (int req : completed_reqs) {
+            std::cout << req << '\n';
+        }
     }
 }
