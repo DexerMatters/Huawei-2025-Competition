@@ -5,7 +5,5 @@ with open("/home/mia/Repositories/Projects/2025-code-craft-preliminary-0313updat
         datas = int(line.split())
         if len(datas)==48:
             tag += 1
-            write
-
-
+          
 
