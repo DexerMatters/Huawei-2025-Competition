@@ -136,7 +136,7 @@ void make_read_request(int req_id, int object_id);
 std::pair<std::vector<std::string>, ivector> read(int object_id, int req_id);
 
 /****************************************************************************************
- * Auxiliary functions
+ * Auxiliary fuctions
  ****************************************************************************************/
 
 void scan_numbers(ivector& vector);
