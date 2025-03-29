@@ -10,6 +10,7 @@ ivector del(int object_id) {
             aborted_requests.push_back(i);
         }
     }
+    return aborted_requests;
 }
 
 

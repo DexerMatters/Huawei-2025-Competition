@@ -181,6 +181,7 @@ public:
     * @param disk_size: Size of each disk
     * @param tag_amount: Number of tags
     */
+   DiskGroup();
     DiskGroup(
         // tag level info, for disk-group-to-disk
         const ivector &tags_sorted_by_busy_time,
@@ -196,6 +197,19 @@ public:
         int tag_amount
         );
     Object write_to_group(int object_id, int object_tag, int object_size);
+    void set(// tag level info, for disk-group-to-disk
+        const ivector &tags_sorted_by_busy_time,
+        // index begin with **1**
+        const ivector &sizes_sorted_by_tag,
+        // disk level info, for disk-to-disk
+        int repica_block_size,
+        // index begin with **1**
+        int disk_amount,
+        // index begin with **1**
+        int disk_size,
+        // index begin with **0**   
+        int tag_amount
+        );
     private:
 
     /*****************

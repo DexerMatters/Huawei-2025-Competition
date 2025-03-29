@@ -5,6 +5,8 @@
 #include <math.h>
 #endif
 
+// ⚠️ Declare disk_group_maneger as a global variable
+DiskGroup disk_group_maneger;
 
 void request_initalization()
 {
@@ -60,7 +62,12 @@ void  request_freq_init()
         scan_numbers(fre_read[i]);
     tag_sort_by_busy_time = getMaxIndices(fre_read);
 
-    
+    // ⚠️ Declare disk_group_maneger as a global variable
+    disk_group_maneger.set(
+    tag_sort_by_busy_time,
+    sizes_sorted_by_tag,
+    G / 1, N, V, M);
+
     std::cout.flush();
 }
 

@@ -64,7 +64,7 @@ struct disk_unit_info
 
     disk_unit_info(std::array<std::array<std::pair<int, int>, REP_NUM>, REP_NUM> disk_group_unit, int blind_unit_amount) {}
 };
-
+DiskGroup::DiskGroup() = default;
 DiskGroup::DiskGroup(
     // tag level info, for disk-group-to-disk
     const ivector &tags_sorted_by_busy_time,
@@ -197,7 +197,32 @@ DiskGroup::DiskGroup(
         }
     }
 }
+void DiskGroup::set(
+    // tag level info, for disk-group-to-disk
+    const ivector &tags_sorted_by_busy_time,
 
+    // index begin with **1**
+    const ivector &sizes_sorted_by_tag,
+
+    // disk level info, for disk-to-disk
+    int repica_block_size,
+
+    // index begin with **1**
+    int disk_amount,
+
+    // index begin with **1**
+    int disk_size,
+
+    // index begin with **0**
+    int tag_amount
+
+)
+{
+    this->repica_block_size = repica_block_size;
+    this->disk_amount = disk_amount;
+    this->disk_size = disk_size;
+    this->tag_amount = tag_amount;
+}
 Object DiskGroup::write_to_group(int object_id, int object_tag, int object_size)
 {
     Object obj{};
@@ -430,10 +455,3 @@ iarray<REP_NUM + 1> DiskGroup::alloc_replica_disk_ids_in_fallback(int object_id,
         (disk_start + 2) % fallback_disk_size + fallback_disk_start_index};
     return arr;
 }
-
-// magical number G/2 is replica_block_size
-// initialize the disk group manager
-DiskGroup disk_group_manager(
-    tag_sort_by_busy_time,
-    sizes_sorted_by_tag,
-    G / 2, N, V, M);
