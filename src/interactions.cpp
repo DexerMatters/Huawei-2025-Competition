@@ -60,12 +60,7 @@ void  request_freq_init()
         scan_numbers(fre_read[i]);
     tag_sort_by_busy_time = getMaxIndices(fre_read);
 
-    // magical number G/2 is replica_block_size
-    // initialize the disk group manager
-    DiskGroup disk_group_manager(
-        tag_sort_by_busy_time,
-        sizes_sorted_by_tag,
-        G / 2, N, V, M);
+    
     std::cout.flush();
 }
 

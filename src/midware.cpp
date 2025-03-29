@@ -430,3 +430,11 @@ iarray<REP_NUM + 1> DiskGroup::alloc_replica_disk_ids_in_fallback(int object_id,
         (disk_start + 2) % fallback_disk_size + fallback_disk_start_index};
     return arr;
 }
+
+
+// magical number G/2 is replica_block_size
+    // initialize the disk group manager
+    DiskGroup disk_group_manager(
+        tag_sort_by_busy_time,
+        sizes_sorted_by_tag,
+        G / 2, N, V, M);
