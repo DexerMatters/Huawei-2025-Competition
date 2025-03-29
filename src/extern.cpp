@@ -68,7 +68,7 @@ bool is_farther_than(int dest1, int dest2) {
     // Note that the disk is a circular array with the capacity. 
     // And disk starts from 1 to capacity.
     if (dest1 == dest2) {
-        return false;
+        return true;
     }
     if (dest1 < dest2) {
         return dest2 - dest1 > V / 2;
@@ -82,10 +82,20 @@ void record_request(int req_id) {
     for (int i = 1; i <= REP_NUM; i++) {
         auto disk_id = obj.replica[i];
         auto& list = ordered_requests[disk_id];
-        auto it = std::find_if(list.begin(), list.end(), [&](int req) {
-            return is_farther_than(obj.unit[i][1], object[request[req].object_id].unit[i][1]);
+        auto head = obj.unit[disk_id][1];
+        if (list.empty()) {
+            list.push_back(req_id);
+            continue;
+        }
+        auto it = std::find_if(list.begin(), list.end(), [&](auto req) {
+            return object[request[req].object_id].unit[disk_id][1] >= head;
             });
-        list.insert(it, req_id);
+        if (it == list.end()) {
+            list.push_back(req_id);
+        }
+        else {
+            list.insert(it, req_id);
+        }
     }
 }
 

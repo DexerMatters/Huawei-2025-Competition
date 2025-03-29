@@ -14,17 +14,22 @@ void make_read_request(int req_id, int object_id) {
 
 
 
-std::pair<std::vector<std::string>, ivector> read(int object_id, int req_id) {
+std::pair<std::vector<std::string>, ivector> read() {
     // Preparation
     std::vector<std::string> actions;
     ivector completed_reqs;
 
     reset_tokens();
-    make_read_request(req_id, object_id);
 
     // Evaluate the distance towards the first requested data unit
     for (int i = 1; i <= N; i++) {
-        auto& reqs = ordered_requests[i];
+
+        // To protect the iterator
+        // We need to copy the requests
+        auto& reqs_ = ordered_requests[i];
+        auto reqs = ivector(reqs_.size()); // Copied requests
+        std::copy(reqs_.begin(), reqs_.end(), reqs.begin());
+
         std::stringstream action;
         if (reqs.empty()) {
             // Do nothing
@@ -32,15 +37,34 @@ std::pair<std::vector<std::string>, ivector> read(int object_id, int req_id) {
             actions.push_back(action.str());
             continue;
         }
+
         // We need to find the closest request to the disk point
         // Position of the disk point is `disk_point[i]`
         // The closest request should be just farther than the disk point
         // so that the disk point can move to the closest request
-        auto closest = std::find_if(reqs.begin(), reqs.end(), [&](int req) {
-            return is_farther_than(disk_point[i], object[req].unit[i][1]);
-            });
+        auto closest = reqs.begin();
+        int skip_needed = 0;
+        for (auto it = reqs.begin(); it != reqs.end(); ++it) {
+            // Skip the last
+            if (it == reqs.end()) {
+                break;
+            }
+            int req = *it;
+            auto it_ = it; // Copy iterator
+            auto skip_needed_now = calculate_distance(
+                disk_point[i], object[request[*it].object_id].unit[i][1]
+            );
+            auto skip_needed_next = calculate_distance(
+                disk_point[i], object[request[*(++it_)].object_id].unit[i][1]
+            );
+            if (skip_needed_now < skip_needed_next) {
+                closest = it;
+                skip_needed = skip_needed_now;
+                break;
+            }
+        }
+
         auto closest_obj = object[request[*closest].object_id];
-        auto skip_needed = calculate_distance(disk_point[i], closest_obj.unit[i][1]);
 
         // Skipping
         if (skip_needed >= G) {
@@ -61,23 +85,25 @@ std::pair<std::vector<std::string>, ivector> read(int object_id, int req_id) {
         auto read_req = closest;
         while (tokens[i] - READING_COSTS[nth] >= 0) {
             // Read Once
-            read_id = data[disk_point[i]];
             action << "r";
             tokens[i] -= READING_COSTS[nth++];
 
             // Check if the request is completed
-            if (process_request(i, *read_req)) {
+            if (process_request(i, *read_req) && read_id != 0) {
                 completed_reqs.push_back(*read_req);
             }
 
             // Next
             disk_point[i] = (disk_point[i] % V) + 1;
             int next_id = data[disk_point[i]];
-            if (read_id != next_id) {
+            if (read_id != next_id && next_id != 0) {
                 // Change request
                 read_req++;
                 if (read_req == reqs.end()) {
-                    break;
+                    if (reqs.empty()) {
+                        break;
+                    }
+                    read_req = reqs.begin();
                 }
             }
 
