@@ -43,7 +43,7 @@ fre_read[2][1] fre_read[2][2] ... fre_read[2][ceil(T/1800)]
 ...
 fre_read[M][1] fre_read[M][2] ... fre_read[M][ceil(T/1800)]
 */
-void request_freq_init()
+void  request_freq_init()
 {
     // Read fre_del
     for (int i = 1; i <= M; i++)
@@ -53,10 +53,19 @@ void request_freq_init()
     for (int i = 1; i <= M; i++)
         scan_numbers(fre_write[i]);
 
+    sizes_sorted_by_tag = getRowSums(fre_write);
+
     // Read fre_read
     for (int i = 1; i <= M; i++)
         scan_numbers(fre_read[i]);
+    tag_sort_by_busy_time = getMaxIndices(fre_read);
 
+    // magical number G/2 is replica_block_size
+    // initialize the disk group manager
+    DiskGroup disk_group_manager(
+        tag_sort_by_busy_time,
+        sizes_sorted_by_tag,
+        G / 2, N, V, M);
     std::cout.flush();
 }
 
@@ -81,7 +90,7 @@ void request_write()
     {
         // Write object and store it in the object array
         scanf_s("%d %d %d", &object_id, &object_tag, &object_size);
-        auto obj = write(object_id, object_tag, object_size);
+        auto obj = disk_group_maneger.write_to_group(object_id, object_tag, object_size);
         object[object_id] = obj;
 
         if (i == 1)

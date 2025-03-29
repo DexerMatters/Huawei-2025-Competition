@@ -91,6 +91,11 @@ extern std::vector<ivector> fre_write;
 
 extern std::vector<ivector> fre_read;
 
+extern std::vector<int> tag_sort_by_busy_time;
+
+extern std::vector<int> sizes_sorted_by_tag;
+
+
 /****************************************************************************************
  * Interaction functions
  ****************************************************************************************/
@@ -152,12 +157,18 @@ void record_request(int req_id);
 void delete_recorded_request(int req_id);
 
 bool process_request(int disk_id, int req_id);
+
+std::vector<int> getMaxIndices(const std::vector<std::vector<int>>& matrix);
+
+std::vector<int> getRowSums(const std::vector<std::vector<int>>& matrix);
+
 /****************************
  * middleware functions
 **************************/
 template <size_t REP_NUM> int count_zero(const iarray<REP_NUM> &vec);
 struct disk_group_unit_info;
 struct disk_unit_info;
+
 class DiskGroup
 {
 public:
@@ -261,6 +272,9 @@ public:
    //********************************************* *//
    iarray<REP_NUM + 1> alloc_replica_disk_ids_in_fallback(int object_id, int object_tag);
 };
-extern DiskGroup disk_group;
+
+
+// Disk group manager
+extern DiskGroup disk_group_maneger;
 
 #endif // !LIBS_HPP
