@@ -18,6 +18,9 @@ void request_initalization()
     for (int i = 1; i <= N; i++)
         std::fill(disk[i], disk[i] + V + 1, 0);
 
+    // Initialize disk points
+    std::fill(disk_point, disk_point + N + 1, 1);
+
     // fre_xx is a 2D array
     // fre_xx[1][1] ... fre_xx[M][ceil(T/1800)]
     fre_del = std::vector<ivector>(M + 1, { 0 });
@@ -59,8 +62,8 @@ void request_freq_init()
 
 void request_timestamp()
 {
-    int timestamp;
-    scanf_s("TIMESTAMP %d", &timestamp);
+    int timestamp = 0;
+    scanf_s("%*s%d", &timestamp);
     std::cout << "TIMESTAMP " << timestamp << std::endl;
     std::cout.flush();
 }
@@ -137,14 +140,19 @@ void request_read() {
         object_ids.push_back(object_id);
     }
 
-    for (int j = 0; j < n_read; j++) {
-        auto [actions, completed_reqs] = read(object_ids[j], req_ids[j]);
-        for (auto& action : actions) {
-            std::cout << action;
-        }
-        std::cout << completed_reqs.size() << '\n';
-        for (int req : completed_reqs) {
-            std::cout << req << '\n';
-        }
+    // Make requests
+    for (int i = 0; i < n_read; i++) {
+        make_read_request(req_ids[i], object_ids[i]);
     }
+
+    // Process requests
+    auto [actions, completed_reqs] = read();
+    for (auto& action : actions) {
+        std::cout << action;
+    }
+    std::cout << completed_reqs.size() << '\n';
+    for (int req : completed_reqs) {
+        std::cout << req << '\n';
+    }
+
 }

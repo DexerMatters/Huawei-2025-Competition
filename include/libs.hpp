@@ -133,7 +133,7 @@ void release_unit(int object_id);
 
 void make_read_request(int req_id, int object_id);
 
-std::pair<std::vector<std::string>, ivector> read(int object_id, int req_id);
+std::pair<std::vector<std::string>, ivector> read();
 
 /****************************************************************************************
  * Auxiliary fuctions
