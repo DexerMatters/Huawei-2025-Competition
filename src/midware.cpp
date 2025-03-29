@@ -67,21 +67,7 @@ struct disk_unit_info
 };
 
 
-
-
-class DiskGroup
-{
-public:
-    /*
-    * Constructor for DiskGroup
-    * @param tags_sorted_by_busy_time: Vector of tags sorted by busy time
-    * @param sizes_sorted_by_tag: Vector of sizes sorted by tag
-    * @param token_size: Size of each token 
-    * @param disk_amount: Number of disks
-    * @param disk_size: Size of each disk
-    * @param tag_amount: Number of tags
-    */
-    DiskGroup(
+    DiskGroup::DiskGroup(
         // tag level info, for disk-group-to-disk
         const ivector &tags_sorted_by_busy_time,
 
@@ -221,7 +207,7 @@ public:
     }
 
 
-    Object write_to_group(int object_id, int object_tag, int object_size)
+    Object DiskGroup::write_to_group(int object_id, int object_tag, int object_size)
     {
         Object obj{};
         int write_times = object_size / REP_NUM;
@@ -240,11 +226,30 @@ public:
                 obj.size = object_size;
                 obj.is_delete = false;
 
-
-                for (int i = 0; i < REP_NUM; i++) {
-                    obj.replica[i] = group_pos.disk_group_id;
-                    obj.unit[i] = ;
+                obj.replica[0] = group_pos.disk_group_id;
+                for (int i = 1; i <= REP_NUM; i++) {
+                    // warring: `disk_group_id` begin with **1**
+                    // magical number 0 is the first replica
+                    obj.replica[i] = disk_pos.disk_group_unit[i][0].first;
                 }
+
+                obj.unit[0] = new int[object_size + 1];
+                for (int current_rep = 1; current_rep <= REP_NUM; current_rep++)
+                {
+                    int *unit_tmp = int{};
+                    for (int current_object_block = 0; current_object_block < REP_NUM; current_object_block++)
+                    {
+                        if (disk_pos.disk_group_unit[current_object_block][current_rep].second != INVALIDE_NUM)
+                        {
+                            unit_tmp[current_object_block] = disk_pos.disk_group_unit[current_object_block][current_rep].second;
+                        }
+                        
+                    }
+
+                    obj.unit[current_rep] = unit_tmp;
+                    
+                }
+                
                 
             }
             else if (write_times == 1)
@@ -260,69 +265,28 @@ public:
                 throw std::runtime_error("object size is not in the range of 1-5");
             }
             
-            
+            return obj;
         }
         else
         {
-            fsfs
-            throw std::runtime_error("fallback disk group is not available");
+           
+
+            auto replica_disk_ids = alloc_replica_disk_ids(object_id, object_tag);
+
+            std::copy(replica_disk_ids.begin(), replica_disk_ids.end(), obj.replica);
+            for (int i = 1; i <= REP_NUM; i++) {
+                ivector unit_indices =
+                    alloc_unit_indices(object_id, object_tag, object_size, obj.replica[i]);
+                int* tmp = new int[object_size + 1];
+                std::copy(unit_indices.begin(), unit_indices.end(), tmp);
+                obj.unit[i] = tmp;
+            }
+
+            return obj;
         }
     }
 
 
-private:
-    /*****************
-     * member variables
-     ******************/
-    // `is_fallback_available`
-    // layer: external
-    bool is_fallback_available;
-
-    // `fallback_disk_start_index`
-    // layer: external::phyical disk
-    int fallback_disk_start_index;
-
-    // `fallback_disk_size`
-    // layer: external::phyical disk
-    int fallback_disk_size;
-
-
-    // `tag_amount`
-    // layer: external::tag
-    int tag_amount; 
-    int repica_block_size; 
-    int tag_block_size; 
-
-    // `tag_block_limit_amount_for_disk`
-    // layer: external::phyical disk
-    int disk_amount;
-    int disk_size; 
-    int tag_block_limit_amount_for_disk;
-
-
-    // `disk_group_amount`
-    // layer: disk group
-    int disk_group_amount;
-    // `disk_group_id_head_disk_mapping_list`
-    // layer: disk group - disk
-    // size: [disk_group_amount]
-    // shape[0] begins with **1**
-    ivector disk_group_id_head_disk_mapping_list;
-    /*
-    * `tag_block_start_index_sorted_by_tag_for_each_disk`
-    * layer: tag block
-    * size: [disk_group_amount][tag_amount]
-    * shape[0] begins with **1**, shape[1] begins with **1**
-    */
-    std::vector<ivector> tag_block_start_index_sorted_by_tag_for_each_disk;
-
-    /*
-    * `tag_block_amount_sorted_by_tag_for_each_disk`
-    * layer: tag block
-    * size: [disk_group_amount][tag_amount]
-    * shape[0] begins with **1**, shape[1] begins with **1**
-    */
-    std::vector<ivector> tag_block_amount_sorted_by_tag_for_each_disk; 
     /* ****************************
     * operation functions for disk group-disk layer
     ******************************** */
@@ -335,7 +299,7 @@ private:
     // * disk_group_id: the id of the disk group
     // * trac_unit_id: the id of the unit
     // * @return: how many zero ints are in the disk group unit
-    int read_disk_group_unit_usage(int disk_group_id, int unit_id)
+    int DiskGroup::read_disk_group_unit_usage(int disk_group_id, int unit_id)
     {
         iarray<REP_NUM> disk_group_unit;
         for (size_t disk_offset = 0; disk_offset < REP_NUM; disk_offset++)
@@ -347,7 +311,7 @@ private:
         return count_zero(disk_group_unit);
     }
     
-    disk_unit_info read_disk_group_position(int disk_group_id, int unit_id, int blind_unit_amount)
+    disk_unit_info DiskGroup::read_disk_group_position(int disk_group_id, int unit_id, int blind_unit_amount)
     {
         
         std::array<std::array<std::pair<int, int>, REP_NUM>, REP_NUM> disk_group_unit;
@@ -374,7 +338,7 @@ private:
         return disk_unit_info(disk_group_unit, blind_unit_amount);
     }
     
-    disk_unit_info write_disk_group_position(int disk_group_id, int unit_id, int blind_unit_amount, int value)
+    disk_unit_info DiskGroup::write_disk_group_position(int disk_group_id, int unit_id, int blind_unit_amount, int value)
     {
         disk_unit_info actual_pos = read_disk_group_position(disk_group_id, unit_id, blind_unit_amount);
     
@@ -398,7 +362,7 @@ private:
     /* ****************************
     * operation functions for object-disk group layer
     ******************************** */
-    disk_group_unit_info find_available_disk_space(int object_id, int object_tag, int object_size)
+    disk_group_unit_info DiskGroup::find_available_disk_space(int object_id, int object_tag, int object_size)
     {
         
         for (int disk_group_id = 1; disk_group_id <= disk_group_amount; disk_group_id++)
@@ -441,7 +405,7 @@ private:
         return disk_group_unit_info(true);
     }
 
-    disk_group_unit_info read_2unit(int disk_group_id, int unit_id, int object_size)
+    disk_group_unit_info DiskGroup::read_2unit(int disk_group_id, int unit_id, int object_size)
     {
         auto pos = disk_group_unit_info();
         int current_unit_usage = read_disk_group_unit_usage(disk_group_id, unit_id);
@@ -474,7 +438,17 @@ private:
     }
     
     //********************************************* *//
+    iarray<REP_NUM + 1> DiskGroup::alloc_replica_disk_ids_in_fallback(int object_id, int object_tag) {
+        static int replica_disk_start = 0;
+        replica_disk_start += 3;
+        int disk_start = replica_disk_start;
+        iarray<REP_NUM + 1> arr{
+            0,
+            disk_start % fallback_disk_size + fallback_disk_start_index,
+            (disk_start + 1) % fallback_disk_size + fallback_disk_start_index,
+            (disk_start + 2) % fallback_disk_size + fallback_disk_start_index};
+        return arr;
+    }
 
-    
-};
+
 
