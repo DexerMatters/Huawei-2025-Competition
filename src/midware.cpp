@@ -32,12 +32,40 @@ int count_zero(const iarray<REP_NUM> &vec)
 struct disk_group_unit_info
 {
     int disk_group_id;
-    int disk_id;
-    int tag_block_id;
-    int tag_block_size;
-    int tag_block_start_index;
-    int tag_block_amount;
+    int disk_group_unit_id;
+    bool is_fallback_disk_group;
+    bool is_fail_lookup;
+
+    disk_group_unit_info()
+        : disk_group_id(0), disk_group_unit_id(0), is_fallback_disk_group(false), is_fail_lookup(true)
+    {
+    }
+    disk_group_unit_info(int disk_group_id, int disk_group_unit_id)
+        : disk_group_id(disk_group_id), disk_group_unit_id(disk_group_unit_id), is_fallback_disk_group(false), is_fail_lookup(false)
+    {
+    }
+    disk_group_unit_info(bool is_fallback_disk_group)
+        : disk_group_id(INVALIDE_NUM), disk_group_unit_id(INVALIDE_NUM), is_fallback_disk_group(true), is_fail_lookup(false)
+    {
+    }
+    disk_group_unit_info(int disk_group_id, int disk_group_unit_id, bool is_fallback_disk_group, bool is_fail_lookup)
+        : disk_group_id(disk_group_id), disk_group_unit_id(disk_group_unit_id), is_fallback_disk_group(is_fallback_disk_group), is_fail_lookup(is_fail_lookup)
+    {
+    }
+
 };
+
+struct disk_unit_info
+{   
+    // `disk_group_unit` is a 2D array of pairs, where each pair contains the disk group id and the unit id
+    // shape: [disk_group_amount][REP_NUM]
+    // pair <disk_group_id, unit_id>
+    std::array<std::array<std::pair<int, int>, REP_NUM>, REP_NUM> disk_group_unit;
+    int blind_unit_amount;
+
+    disk_unit_info(std::array<std::array<std::pair<int, int>, REP_NUM>, REP_NUM> disk_group_unit, int blind_unit_amount){}
+};
+
 
 
 
@@ -136,8 +164,9 @@ public:
             // size: [tag_amount]
             // [0, 0, 0, 0, ...](disk i)
             // start tag_block
-            ivector start_tag_block_sorted_by_tag_temp = ivector(tag_amount, 0);
-            ivector tag_block_amount_sorted_by_tag_temp = ivector(tag_amount, 0);
+            ivector start_tag_block_sorted_by_tag_temp = ivector(tag_amount+1, 0);
+            ivector tag_block_amount_sorted_by_tag_temp = ivector(tag_amount+1, 0);
+            tag_block_amount_sorted_by_tag_temp[0] = 1;
             
             // tag_block_start_index_sorted_by_tag_for_each_disk is filled and pushed back
             tag_block_start_index_sorted_by_tag_for_each_disk.push_back(start_tag_block_sorted_by_tag_temp);
@@ -162,6 +191,7 @@ public:
             for (int current_disk_group = 1; current_disk_group <= disk_group_amount; current_disk_group++)
             {
                 // `finally_tag_block_amount` if is not full
+                // reduce overflow
                 int finally_tag_block_amount = current_disk_group > remaining_tag_block_count? basic_tag_block_amount: basic_tag_block_amount+1;
                 int stimulational_tag_block_amount = 
                     tag_block_start_index_sorted_by_tag_for_each_disk[current_disk_group][current_tag-1] + 
@@ -175,21 +205,70 @@ public:
                         tag_block_amount_sorted_by_tag_for_each_disk[current_disk_group + 1][current_tag] += 
                             (stimulational_tag_block_amount - tag_block_limit_amount_for_disk);
                     }
-                }
+                } // reduced overflow
+
+
                 tag_block_amount_sorted_by_tag_for_each_disk[current_disk_group][current_tag] = finally_tag_block_amount;
-                    
+                // `tag_block_start_index_sorted_by_tag_for_each_disk` begin with **1**
+                // 0     1 2 3 4 5 6 7 8 9 10
+                // null  s i z e 1 s i z e 2
+                // tag_block_size is the **6th**
                 tag_block_start_index_sorted_by_tag_for_each_disk[current_disk_group][current_tag] = 
-                    tag_block_start_index_sorted_by_tag_for_each_disk[current_disk_group - 1][current_tag] + 
-                    tag_block_amount_sorted_by_tag_for_each_disk[current_disk_group][current_tag];
+                    tag_block_start_index_sorted_by_tag_for_each_disk[current_disk_group][current_tag - 1] + 
+                    tag_block_amount_sorted_by_tag_for_each_disk[current_disk_group][current_tag - 1];
             }
         }
     }
 
 
-    void write_to_group(int object_id, int object_tag, int object_size)
+    Object write_to_group(int object_id, int object_tag, int object_size)
     {
-        // code
+        Object obj{};
+        int write_times = object_size / REP_NUM;
+        int blind_unit_amount = object_size % REP_NUM;
+        disk_group_unit_info group_pos = find_available_disk_space(object_id, object_tag, object_size);
+        group_pos = find_available_disk_space(object_id, object_tag, object_size);
+        if (group_pos.is_fallback_disk_group == false)
+        {
+            if (write_times == 0)
+            {
+                // write to disk group
+                // `disk_group_id` begin with **1**
+                // `unit_id` begin with **1**
+                disk_unit_info disk_pos = write_disk_group_position(group_pos.disk_group_id, group_pos.disk_group_unit_id, blind_unit_amount, object_id);
+                
+                obj.size = object_size;
+                obj.is_delete = false;
+
+
+                for (int i = 0; i < REP_NUM; i++) {
+                    obj.replica[i] = group_pos.disk_group_id;
+                    obj.unit[i] = ;
+                }
+                
+            }
+            else if (write_times == 1)
+            {
+                // write to disk group
+                // `disk_group_id` begin with **1**
+                // `unit_id` begin with **1**
+                disk_unit_info disk_pos1 = write_disk_group_position(group_pos.disk_group_id, group_pos.disk_group_unit_id, 0, object_id);
+                disk_unit_info disk_pos2 = write_disk_group_position(group_pos.disk_group_id, group_pos.disk_group_unit_id+1, blind_unit_amount, object_id);
+            }
+            else
+            {
+                throw std::runtime_error("object size is not in the range of 1-5");
+            }
+            
+            
+        }
+        else
+        {
+            fsfs
+            throw std::runtime_error("fallback disk group is not available");
+        }
     }
+
 
 private:
     /*****************
@@ -233,7 +312,7 @@ private:
     * `tag_block_start_index_sorted_by_tag_for_each_disk`
     * layer: tag block
     * size: [disk_group_amount][tag_amount]
-    * shape[0] begins with **1**, shape[1] begins with **0**
+    * shape[0] begins with **1**, shape[1] begins with **1**
     */
     std::vector<ivector> tag_block_start_index_sorted_by_tag_for_each_disk;
 
@@ -241,45 +320,161 @@ private:
     * `tag_block_amount_sorted_by_tag_for_each_disk`
     * layer: tag block
     * size: [disk_group_amount][tag_amount]
-    * shape[0] begins with **1**, shape[1] begins with **0**
+    * shape[0] begins with **1**, shape[1] begins with **1**
     */
     std::vector<ivector> tag_block_amount_sorted_by_tag_for_each_disk; 
+    /* ****************************
+    * operation functions for disk group-disk layer
+    ******************************** */
 
+    // * @name: `read_disk_group_unit_usage`
+    // * layer: disk group-disk
+    // * int -> int -> int
+    // * return: how many non-zero ints are in the disk group unit
+    // * @params:
+    // * disk_group_id: the id of the disk group
+    // * trac_unit_id: the id of the unit
+    // * @return: how many zero ints are in the disk group unit
+    int read_disk_group_unit_usage(int disk_group_id, int unit_id)
+    {
+        iarray<REP_NUM> disk_group_unit;
+        for (size_t disk_offset = 0; disk_offset < REP_NUM; disk_offset++)
+        {
+            int disk_index = disk_group_id_head_disk_mapping_list[disk_group_id] + disk_offset;
+            disk_group_unit[disk_offset] = disk[disk_index][unit_id];
+        }
+
+        return count_zero(disk_group_unit);
+    }
+    
+    disk_unit_info read_disk_group_position(int disk_group_id, int unit_id, int blind_unit_amount)
+    {
+        
+        std::array<std::array<std::pair<int, int>, REP_NUM>, REP_NUM> disk_group_unit;
+        int blind_offset = REP_NUM - blind_unit_amount;
+        for (size_t unit_offset = 0; unit_offset < REP_NUM; unit_offset++)
+        {
+            std::array<std::pair<int, int>, REP_NUM> rep_position;
+            for (size_t rep_offset = 0; rep_offset < REP_NUM; rep_offset++)
+            {
+                std::pair<int, int> new_unit;
+                if (unit_offset < blind_offset)
+                {
+                    new_unit = std::make_pair(disk_group_id_head_disk_mapping_list[disk_group_id] + ((unit_offset + rep_offset) % REP_NUM), 
+                                                    unit_id+rep_offset*repica_block_size);
+                }
+                else
+                {
+                    new_unit = std::make_pair(INVALIDE_NUM, INVALIDE_NUM);
+                }
+                rep_position[rep_offset] = new_unit;
+            }
+            disk_group_unit[unit_offset] = rep_position;    
+        }
+        return disk_unit_info(disk_group_unit, blind_unit_amount);
+    }
+    
+    disk_unit_info write_disk_group_position(int disk_group_id, int unit_id, int blind_unit_amount, int value)
+    {
+        disk_unit_info actual_pos = read_disk_group_position(disk_group_id, unit_id, blind_unit_amount);
+    
+        for (size_t unit_offset = 0; unit_offset < REP_NUM; unit_offset++)
+        {
+            for (size_t rep_offset = 0; rep_offset < REP_NUM; rep_offset++)
+            {
+                if (actual_pos.disk_group_unit[unit_offset][rep_offset].first != INVALIDE_NUM)
+                {
+                    int disk_index = actual_pos.disk_group_unit[unit_offset][rep_offset].first;
+                    int unit_index = actual_pos.disk_group_unit[unit_offset][rep_offset].second;
+                    disk[disk_index][unit_index] = value;
+                }
+            }
+            
+        }
+        return actual_pos;
+    }
+    
+    
     /* ****************************
     * operation functions for object-disk group layer
     ******************************** */
     disk_group_unit_info find_available_disk_space(int object_id, int object_tag, int object_size)
     {
-        auto pos = disk_group_unit_info();
-        return std::move(pos);
-    }
-
-    /* ****************************
-    * operation functions for disk group-disk layer
-    ******************************** */
-
-    /*
-    * @name: `read_disk_group_unit_usage`
-    * layer: disk group-disk
-    * int -> int -> int
-    * return: how many non-zero ints are in the disk group unit
-    * @params:
-    * disk_group_id: the id of the disk group
-    * trac_unit_id: the id of the unit
-    * @return: how many non-zero ints are in the disk group unit
-    */
-    int read_disk_group_unit_usage(int disk_group_id, int trac_unit_id)
-    {
-        iarray<REP_NUM> disk_group_unit;
-        for (size_t i = 0; i < REP_NUM; i++)
+        
+        for (int disk_group_id = 1; disk_group_id <= disk_group_amount; disk_group_id++)
         {
-            int disk_index = disk_group_id_head_disk_mapping_list[disk_group_id] + i;
-            disk_group_unit[i] = disk[disk_index][trac_unit_id];
-        }
+            // `disk_group_id` begin with **1**
+            int disk_index = disk_group_id_head_disk_mapping_list[disk_group_id - 1];
+            int tag_block_start_index = 
+                tag_block_start_index_sorted_by_tag_for_each_disk[disk_group_id][object_tag];
+            // `tag_block_size` begin with **1**
+            // 0     1 2 3 4 5 6 7 8 9 10
+            // null  s i z e 1 s i z e 2
+            // tag_block_size is the **6th**
+            int former_tag_block_total_size = (tag_block_start_index - 1) * tag_block_size;
+            int first_tag_block_header_position = former_tag_block_total_size+1;
+            int tag_block_amount_in_this_disk_group = 
+                tag_block_amount_sorted_by_tag_for_each_disk[disk_group_id][object_tag];
 
-        return count_zero(disk_group_unit);
+            for (int offset_of_tag_block = 0; offset_of_tag_block < tag_block_amount_in_this_disk_group; offset_of_tag_block++)
+            {
+                int tag_block_position = 
+                    first_tag_block_header_position + offset_of_tag_block * tag_block_size;
+                
+                // ⚠️ unit_position < tag_block_position+repica_block_size **- 1**;
+                for (int unit_id = tag_block_position; unit_id < tag_block_position+repica_block_size - 1; unit_id++)
+                {
+                    auto maybe_position = read_2unit(disk_group_id, unit_id, object_size);
+                    if (maybe_position.is_fail_lookup == false)
+                    {
+                        // `disk_group_id` begin with **1**
+                        // `unit_id` begin with **1**
+                        return maybe_position;
+                    }
+
+                }
+
+                
+            }
+            
+        }
+        return disk_group_unit_info(true);
     }
- 
+
+    disk_group_unit_info read_2unit(int disk_group_id, int unit_id, int object_size)
+    {
+        auto pos = disk_group_unit_info();
+        int current_unit_usage = read_disk_group_unit_usage(disk_group_id, unit_id);
+        int later_unit_usage = read_disk_group_unit_usage(disk_group_id, unit_id);
+        if (object_size / REP_NUM == 0)
+        {
+            if (current_unit_usage + later_unit_usage == object_size || current_unit_usage + later_unit_usage == 6)
+            {
+                // ⚠️ unit_id+1 is the next unit
+                // ⚠️ magical number 6 is the size of the tag block
+                auto pos = disk_group_unit_info(disk_group_id, unit_id+1, false, false);
+                return pos;
+            }
+            return disk_group_unit_info();
+        }
+        else if (object_size / REP_NUM == 1)
+        {
+            if (current_unit_usage + later_unit_usage == object_size)
+            {
+                auto pos = disk_group_unit_info(disk_group_id, unit_id, false, false);
+                return pos;
+            }
+            return disk_group_unit_info();
+            
+        }
+        else 
+        {
+            throw std::runtime_error("object size is in the range of 1-5");
+        }
+    }
+    
+    //********************************************* *//
+
     
 };
 
