@@ -1,6 +1,8 @@
 #include <libs.hpp>
 #include <sstream>
 #include <algorithm>
+#include <vector>
+#include <numeric>
 
 #if defined(__linux__) || defined(__APPLE__)
 #include <iterator>
@@ -36,6 +38,12 @@ std::vector<ivector> fre_read;
 
 Request request[MAX_REQUEST_NUM];
 Object object[MAX_OBJECT_NUM];
+
+std::vector<int> tag_sort_by_busy_time;
+
+std::vector<int> sizes_sorted_by_tag;
+
+
 
 void scan_numbers(ivector& vector) {
     std::string line;
@@ -148,3 +156,63 @@ int which_replica(int disk_id, int object_id) {
     }
     return -1;
 }
+/**
+ * @brief Computes the indices of the maximum elements in each row of a 2D matrix
+ *        and returns a sorted list of row indices based on these maximum values.
+ *
+ * This function processes a 2D matrix (vector of vectors) and determines the index
+ * of the maximum element in each row. If a row is empty, it assigns -1 as the index
+ * for that row. After determining the maximum indices for all rows, it sorts the
+ * row indices based on the corresponding maximum values in ascending order.
+ *
+ * @param matrix A 2D vector of integers representing the input matrix.
+ * @return A vector of integers representing the sorted row indices based on the
+ *         maximum values in each row. Rows with empty content are assigned -1.
+ *
+ * @note If multiple rows have the same maximum value, their relative order in the
+ *       output is determined by their original row indices.
+ */
+std::vector<int> getMaxIndices(const std::vector<std::vector<int>>& matrix) {
+    std::vector<int> maxIndices;
+    for (const auto& row : matrix) {
+        if (!row.empty()) {
+            auto maxElementIt = std::max_element(row.begin(), row.end());
+            maxIndices.push_back(std::distance(row.begin(), maxElementIt));
+        } else {
+            maxIndices.push_back(-1); // Handle empty rows by returning -1
+        }
+    }
+
+    // Create a vector of indices from 0 to maxIndices.size() - 1
+    std::vector<int> sortedIndices(maxIndices.size());
+    std::iota(sortedIndices.begin(), sortedIndices.end(), 0);
+
+    // Sort the indices based on the values in maxIndices
+    std::sort(sortedIndices.begin(), sortedIndices.end(), [&maxIndices](int a, int b) {
+        return maxIndices[a] < maxIndices[b];
+    });
+
+    return sortedIndices;
+}
+
+/**
+ * @brief Computes the sum of each row in a 2D matrix and returns a vector of the sums.
+ *
+ * This function processes a 2D matrix (vector of vectors) and calculates the sum of
+ * elements in each row. The resulting sums are stored in a vector, where each element
+ * corresponds to the sum of the respective row in the input matrix.
+ *
+ * @param matrix A 2D vector of integers representing the input matrix.
+ * @return A vector of integers representing the sum of elements in each row of the matrix.
+ */
+std::vector<int> getRowSums(const std::vector<std::vector<int>>& matrix) {
+    std::vector<int> rowSums;
+    for (const auto& row : matrix) {
+        int sum = std::accumulate(row.begin(), row.end(), 0);
+        rowSums.push_back(sum);
+    }
+    return rowSums;
+}
+
+
+
