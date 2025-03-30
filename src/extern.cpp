@@ -94,7 +94,8 @@ void record_request(int req_id) {
             continue;
         }
         auto it = std::find_if(list.begin(), list.end(), [&](auto req) {
-            return object[request[req].object_id].unit[disk_id][1] >= head;
+            return object[request[req].object_id]
+                .unit[which_replica(disk_id, request[req].object_id)][1] >= head;
             });
         if (it == list.end()) {
             list.push_back(req_id);
