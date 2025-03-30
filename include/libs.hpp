@@ -91,10 +91,11 @@ extern std::vector<ivector> fre_write;
 
 extern std::vector<ivector> fre_read;
 
+/*
 extern std::vector<int> tag_sort_by_busy_time;
 
 extern std::vector<int> sizes_sorted_by_tag;
-
+*/
 
 /****************************************************************************************
  * Interaction functions

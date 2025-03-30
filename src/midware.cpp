@@ -100,7 +100,7 @@ DiskGroup::DiskGroup(
         is_fallback_available = true;
 
         // `fallback_disk_start_index` is start with **1**
-        fallback_disk_size = disk_size - (disk_amount % REP_NUM) - REP_NUM;
+        fallback_disk_size = disk_amount - (disk_amount % REP_NUM) - REP_NUM;
         fallback_disk_start_index = disk_amount - fallback_disk_size;
     }
     else
@@ -222,6 +222,114 @@ void DiskGroup::set(
     this->disk_amount = disk_amount;
     this->disk_size = disk_size;
     this->tag_amount = tag_amount;
+
+    this->tag_block_size = repica_block_size * REP_NUM;
+    /***************************************
+    *  initialize fallback disk settings
+    // `is_fallback_available` is set to true if the disk amount is not a multiple of REP_NUM
+    // `fallback_disk_size` is set to the next multiple of REP_NUM
+    *********************************************/
+   if (disk_amount % REP_NUM != 0)
+   {
+       is_fallback_available = true;
+
+       // `fallback_disk_start_index` is start with **1**
+       fallback_disk_size = disk_amount - (disk_amount % REP_NUM) - REP_NUM;
+       fallback_disk_start_index = disk_amount - fallback_disk_size;
+   }
+   else
+   {
+       is_fallback_available = false;
+       fallback_disk_size = INVALIDE_NUM;       // Invalid value
+       fallback_disk_start_index = disk_amount; // Invalid value
+   }
+
+   /***************************************
+    *  initialize disk group settings
+    * ***************************************/
+   // `limit_disk_amount` is set to the maximum number of disks allowed
+   // [[tag_block1], [tag_block2], [tag_block3], [tag_block4]... [free_tag_block]]
+   tag_block_limit_amount_for_disk = disk_size / tag_block_size;
+
+   // `disk_group_id_head_disk_mapping_list` is initialized to hold the disk group mapping
+   // e.g. [1, 4, 7, 10, ...]
+   // ⚠️ `fallback_disk_start_index` is the head disk of the fallback disk group
+   // ⚠️ `fallback_disk_size` >= i
+   for (int disk_id = 1; disk_id < fallback_disk_start_index; disk_id += REP_NUM)
+   {
+       disk_group_id_head_disk_mapping_list.push_back(disk_id);
+   }
+   disk_group_amount = disk_group_id_head_disk_mapping_list.size();
+
+   /***************************************
+    *  initialize tag_tag_block settings
+    * ***************************************/
+   // first line is [0, 0, 0, 0, ...](disk 0)
+   tag_block_start_index_sorted_by_tag_for_each_disk.push_back(ivector(tag_amount, 0));
+   tag_block_amount_sorted_by_tag_for_each_disk.push_back(ivector(tag_amount, 0));
+
+   /***************************************
+    *  initialize tag_tag_block settings::set zeros to block related variables
+    * ***************************************/
+   // index `current_group_id` begin with **1**
+   for (int current_group_id = 1; current_group_id <= disk_group_amount; current_group_id++)
+   {
+       // `tag_block_start_index_sorted_by_tag_for_each_disk` is initialized to hold the start tag_blocks for each tag
+       // size: [tag_amount]
+       // [0, 0, 0, 0, ...](disk i)
+       // start tag_block
+       ivector start_tag_block_sorted_by_tag_temp = ivector(tag_amount + 1, 0);
+       ivector tag_block_amount_sorted_by_tag_temp = ivector(tag_amount + 1, 0);
+       tag_block_amount_sorted_by_tag_temp[0] = 1;
+
+       // tag_block_start_index_sorted_by_tag_for_each_disk is filled and pushed back
+       tag_block_start_index_sorted_by_tag_for_each_disk.push_back(start_tag_block_sorted_by_tag_temp);
+
+       // `tag_block_amount_sorted_by_tag_for_each_disk` is initialized to hold the tag_block amounts for each tag
+       tag_block_amount_sorted_by_tag_for_each_disk.push_back(tag_block_amount_sorted_by_tag_temp);
+   }
+
+   /***************************************
+    *  initialize tag_tag_block settings::set block related variables
+    * ***************************************/
+   for (int current_tag = 1; current_tag <= tag_amount; current_tag++)
+   {
+       // e.g.:
+       // 1 1
+       // 1 1
+       // 1
+       // remaining_tag_block_count = sizes_sorted_by_tag[current_tag] % repica_block_size;
+       int remaining_tag_block_count = sizes_sorted_by_tag[current_tag] % repica_block_size;
+       int basic_tag_block_amount = sizes_sorted_by_tag[current_tag] / repica_block_size;
+       for (int current_disk_group = 1; current_disk_group <= disk_group_amount; current_disk_group++)
+       {
+           // `finally_tag_block_amount` if is not full
+           // reduce overflow
+           int finally_tag_block_amount = current_disk_group > remaining_tag_block_count ? basic_tag_block_amount : basic_tag_block_amount + 1;
+           int stimulational_tag_block_amount =
+               tag_block_start_index_sorted_by_tag_for_each_disk[current_disk_group][current_tag - 1] +
+               tag_block_amount_sorted_by_tag_for_each_disk[current_disk_group][current_tag - 1] + finally_tag_block_amount;
+           if (stimulational_tag_block_amount > tag_block_limit_amount_for_disk)
+           {
+               finally_tag_block_amount -= (stimulational_tag_block_amount - tag_block_limit_amount_for_disk);
+               if (current_disk_group + 1 <= disk_group_amount)
+               {
+                   // this operation is 十分甚至九分的离谱
+                   tag_block_amount_sorted_by_tag_for_each_disk[current_disk_group + 1][current_tag] +=
+                       (stimulational_tag_block_amount - tag_block_limit_amount_for_disk);
+               }
+           } // reduced overflow
+
+           tag_block_amount_sorted_by_tag_for_each_disk[current_disk_group][current_tag] = finally_tag_block_amount;
+           // `tag_block_start_index_sorted_by_tag_for_each_disk` begin with **1**
+           // 0     1 2 3 4 5 6 7 8 9 10
+           // null  s i z e 1 s i z e 2
+           // tag_block_size is the **6th**
+           tag_block_start_index_sorted_by_tag_for_each_disk[current_disk_group][current_tag] =
+               tag_block_start_index_sorted_by_tag_for_each_disk[current_disk_group][current_tag - 1] +
+               tag_block_amount_sorted_by_tag_for_each_disk[current_disk_group][current_tag - 1];
+       }
+   }
 }
 Object DiskGroup::write_to_group(int object_id, int object_tag, int object_size)
 {
