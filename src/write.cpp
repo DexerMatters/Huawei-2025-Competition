@@ -1,16 +1,6 @@
 #include <algorithm>
 #include <libs.hpp>
 
-void cleanAll() {
-    for (auto& obj : object) {
-        for (int i = 1; i <= REP_NUM; i++) {
-            if (obj.unit[i] != nullptr) {
-                delete obj.unit[i];
-                obj.unit[i] = nullptr;
-            }
-        }
-    }
-}
 
 Object write(int object_id, int object_tag, int object_size) {
     Object obj{};
@@ -23,9 +13,7 @@ Object write(int object_id, int object_tag, int object_size) {
     for (int i = 1; i <= REP_NUM; i++) {
         ivector unit_indices =
             alloc_unit_indices(object_id, object_tag, object_size, obj.replica[i]);
-        int* tmp = new int[object_size + 1];
-        std::copy(unit_indices.begin(), unit_indices.end(), tmp);
-        obj.unit[i] = tmp;
+        obj.unit[i] = std::move(unit_indices);
     }
 
     return obj;
@@ -45,9 +33,8 @@ iarray<REP_NUM + 1> alloc_replica_disk_ids(int object_id, int object_tag) {
 
 ivector alloc_unit_indices(int object_id, int object_tag, int object_size, int disk_id) {
     ivector unit_indices = { 0 };
-    int start = (object_tag - 1) * partition_size;
     // Disk is a circular array
-    for (int i = start;; i = (i + 1) % V) {
+    for (int i = 1;; i = (i + 1) % V) {
         if (disk[disk_id][i + 1] == 0) {
             disk[disk_id][i + 1] = object_id;
             unit_indices.push_back(i + 1);

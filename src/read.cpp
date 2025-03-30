@@ -4,7 +4,7 @@
 
 void make_read_request(int req_id, int object_id) {
     request_count++;
-    bvector process(object[object_id].size, false);
+    bvector process(object[object_id].size + 1, false);
     Request req{ object_id, process, false };
 
     // Add request to the request list
@@ -12,6 +12,10 @@ void make_read_request(int req_id, int object_id) {
     record_request(req_id);
 }
 
+int find_closest_request(int disk_id) {
+    auto& reqs_ = ordered_requests[disk_id];
+
+}
 
 
 std::pair<std::vector<std::string>, ivector> read() {
@@ -30,7 +34,10 @@ std::pair<std::vector<std::string>, ivector> read() {
         auto reqs = ivector(reqs_.size()); // Copied requests
         std::copy(reqs_.begin(), reqs_.end(), reqs.begin());
 
-        std::stringstream action;
+        static std::stringstream action;
+        action.str("");
+        action.clear();
+
         if (reqs.empty()) {
             // Do nothing
             action << "#\n";
@@ -42,47 +49,38 @@ std::pair<std::vector<std::string>, ivector> read() {
         // Position of the disk point is `disk_point[i]`
         // The closest request should be just farther than the disk point
         // so that the disk point can move to the closest request
-        auto closest = reqs.begin();
-        int skip_needed = 0;
-        for (auto it = reqs.begin(); it != reqs.end(); ++it) {
-            // Skip the last
-            if (it == reqs.end()) {
-                break;
+        std::sort(reqs.begin(), reqs.end(),
+            [&, i](int a, int b) {
+                int dist_a = calculate_distance(i, disk_point[i], request[a].object_id);
+                int dist_b = calculate_distance(i, disk_point[i], request[b].object_id);
+                return dist_a < dist_b;
             }
-            int req = *it;
-            auto it_ = it; // Copy iterator
-            auto skip_needed_now = calculate_distance(
-                disk_point[i], object[request[*it].object_id].unit[i][1]
-            );
-            auto skip_needed_next = calculate_distance(
-                disk_point[i], object[request[*(++it_)].object_id].unit[i][1]
-            );
-            if (skip_needed_now < skip_needed_next) {
-                closest = it;
-                skip_needed = skip_needed_now;
-                break;
-            }
-        }
+        );
 
-        auto closest_obj = object[request[*closest].object_id];
+        auto& closest_req = request[*reqs.begin()];
+        auto closest_obj = object[closest_req.object_id];
+        auto skip_needed = calculate_distance(i, disk_point[i], closest_req.object_id);
+
+        // Which replica
+        int i_ = which_replica(i, request[*reqs.begin()].object_id);
 
         // Skipping
         if (skip_needed >= G) {
-            action << "j " << skip_needed << '\n';
-            disk_point[i] = closest_obj.unit[i][1];
-            tokens[i] = 0;
+            action << "j " << skip_needed << "\n";
+            disk_point[i] = closest_obj.unit[i_][1];
+            actions.push_back(action.str());
             continue;
         }
 
         action << rep_char('p', skip_needed);
-        disk_point[i] = closest_obj.unit[i][1];
+        disk_point[i] = closest_obj.unit[i_][1];
         tokens[i] -= skip_needed;
 
         // Reading
         int nth = 1;
         int* data = disk[i];
         int read_id = data[disk_point[i]];
-        auto read_req = closest;
+        auto read_req = reqs.begin();
         while (tokens[i] - READING_COSTS[nth] >= 0) {
             // Read Once
             action << "r";
@@ -100,13 +98,12 @@ std::pair<std::vector<std::string>, ivector> read() {
                 // Change request
                 read_req++;
                 if (read_req == reqs.end()) {
-                    if (reqs.empty()) {
-                        break;
-                    }
-                    read_req = reqs.begin();
+                    break;
                 }
             }
-
+            if (reqs_.empty()) {
+                break;
+            }
             // Update read_id
             read_id = next_id;
         }

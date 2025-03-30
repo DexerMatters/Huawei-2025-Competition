@@ -1,6 +1,8 @@
 #ifndef LIBS_HPP
 #define LIBS_HPP
 
+// #define DEBUG_MODE
+
 #include <iostream>
 #include <vector>
 #include <array>
@@ -22,14 +24,17 @@ constexpr auto FRE_PER_SLICING = (1800);
 constexpr auto EXTRA_TIME = (105);
 constexpr iarray<128> READING_COSTS =
 {
-    0, 64, 16, 13, 11, 9, 8, 7, 6, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    0, 64, 52, 42, 34, 28, 23, 19, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
 };
 
 #define rep_char(c, n) std::string(n, c)
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(DEBUG_MODE)
+#define scanf_s debug_scanf
+#elif defined(__linux__) || defined(__APPLE__)
 #define scanf_s scanf
 #endif
 
@@ -43,7 +48,7 @@ struct Request
 struct Object
 {
     int replica[REP_NUM + 1];
-    int* unit[REP_NUM + 1];
+    ivector unit[REP_NUM + 1];
     int size;
     bool is_delete;
 };
@@ -99,6 +104,8 @@ void request_initalization();
 
 void request_freq_init();
 
+void skip_freq_init();
+
 // Request a timestamp
 void request_timestamp();
 
@@ -133,6 +140,8 @@ void release_unit(int object_id);
 
 void make_read_request(int req_id, int object_id);
 
+int find_closest_request(int disk_id);
+
 std::pair<std::vector<std::string>, ivector> read();
 
 /****************************************************************************************
@@ -145,6 +154,8 @@ void reset_tokens();
 
 int calculate_distance(int point, int dest);
 
+int calculate_distance(int disk_id, int point, int object_id);
+
 bool is_farther_than(int dest1, int dest2);
 
 void record_request(int req_id);
@@ -152,5 +163,13 @@ void record_request(int req_id);
 void delete_recorded_request(int req_id);
 
 bool process_request(int disk_id, int req_id);
+
+int which_replica(int disk_id, int object_id);
+
+/****************************************************************************************
+ * Debug functions
+ ****************************************************************************************/
+
+int debug_scanf(const char* format, ...);
 
 #endif // !LIBS_HPP

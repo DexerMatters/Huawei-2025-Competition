@@ -64,6 +64,12 @@ int calculate_distance(int point, int dest) {
     return V - point + dest;
 }
 
+int calculate_distance(int disk_id, int point, int object_id) {
+    auto& obj = object[object_id];
+    auto i_ = which_replica(disk_id, object_id);
+    return calculate_distance(point, obj.unit[i_][1]);
+}
+
 bool is_farther_than(int dest1, int dest2) {
     // Note that the disk is a circular array with the capacity. 
     // And disk starts from 1 to capacity.
@@ -82,7 +88,7 @@ void record_request(int req_id) {
     for (int i = 1; i <= REP_NUM; i++) {
         auto disk_id = obj.replica[i];
         auto& list = ordered_requests[disk_id];
-        auto head = obj.unit[disk_id][1];
+        auto head = obj.unit[i][1];
         if (list.empty()) {
             list.push_back(req_id);
             continue;
@@ -113,9 +119,13 @@ void delete_recorded_request(int req_id) {
 
 bool process_request(int disk_id, int req_id) {
     auto& req = request[req_id];
-    auto unit = object[req.object_id].unit[disk_id];
+    auto unit = object[req.object_id].unit[which_replica(disk_id, req.object_id)];
     auto size = object[req.object_id].size;
     bool completed = true;
+    // Already completed
+    if (req.is_done) {
+        return false;
+    }
     for (int i = 1; i <= size; i++) {
         if (unit[i] == disk_point[disk_id]) {
             req.process[i] = true;
@@ -127,4 +137,14 @@ bool process_request(int disk_id, int req_id) {
         delete_recorded_request(req_id);
     }
     return completed;
+}
+
+int which_replica(int disk_id, int object_id) {
+    auto& obj = object[object_id];
+    for (int i = 1; i <= REP_NUM; i++) {
+        if (obj.replica[i] == disk_id) {
+            return i;
+        }
+    }
+    return -1;
 }

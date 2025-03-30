@@ -4,8 +4,7 @@
 int main(int, char**) {
     request_initalization();
     request_freq_init();
-
-    std::cout << "OK\n";
+    //skip_freq_init();
 
     for (int t = 1; t <= T + EXTRA_TIME; t++) {
         request_timestamp();
@@ -14,6 +13,5 @@ int main(int, char**) {
         request_read();
     }
 
-    cleanAll();
     return 0;
 }

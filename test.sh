@@ -1,0 +1,1 @@
+python ./docs/run.py ./docs/interactor/linux/interactor docs/data/sample.in ./code_craft

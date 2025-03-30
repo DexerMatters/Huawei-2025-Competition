@@ -10,13 +10,14 @@ ivector del(int object_id) {
             aborted_requests.push_back(i);
         }
     }
+    return aborted_requests;
 }
 
 
 void release_unit(int object_id) {
     auto& obj = object[object_id];
     for (int i = 1; i <= REP_NUM; i++) {
-        if (obj.unit[i] == nullptr)
+        if (obj.unit[i][1] == 0)
             continue;
         for (int j = 1; j <= obj.size; j++) {
             disk[obj.replica[i]][obj.unit[i][j]] = 0;

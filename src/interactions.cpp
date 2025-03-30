@@ -8,7 +8,7 @@
 
 void request_initalization()
 {
-    scanf_s("%d %d %d %d %d", &T, &M, &N, &V, &G);
+    scanf_s("%d%d%d%d%d", &T, &M, &N, &V, &G);
     partition_size = V / M;
 
     ordered_requests = std::vector<std::list<int>>(N + 1, std::list<int>());
@@ -47,16 +47,56 @@ void request_freq_init()
 {
     // Read fre_del
     for (int i = 1; i <= M; i++)
-        scan_numbers(fre_del[i]);
+        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++)
+        {
+            int x;
+            scanf_s("%d", &x);
+            fre_del[i].push_back(x);
+        }
 
     // Read fre_write
     for (int i = 1; i <= M; i++)
-        scan_numbers(fre_write[i]);
+        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++)
+        {
+            int x;
+            scanf_s("%d", &x);
+            fre_write[i].push_back(x);
+        }
 
     // Read fre_read
     for (int i = 1; i <= M; i++)
-        scan_numbers(fre_read[i]);
+        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++)
+        {
+            int x;
+            scanf_s("%d", &x);
+            fre_read[i].push_back(x);
+        }
 
+    std::cout << "OK\n";
+    std::cout.flush();
+}
+
+void skip_freq_init()
+{
+    for (int i = 1; i <= M; i++) {
+        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++) {
+            scanf("%*d");
+        }
+    }
+
+    for (int i = 1; i <= M; i++) {
+        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++) {
+            scanf("%*d");
+        }
+    }
+
+    for (int i = 1; i <= M; i++) {
+        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++) {
+            scanf("%*d");
+        }
+    }
+
+    std::cout << "OK\n";
     std::cout.flush();
 }
 
@@ -64,7 +104,7 @@ void request_timestamp()
 {
     int timestamp = 0;
     scanf_s("%*s%d", &timestamp);
-    std::cout << "TIMESTAMP " << timestamp << std::endl;
+    std::cout << "TIMESTAMP " << timestamp << '\n';
     std::cout.flush();
 }
 
@@ -80,7 +120,7 @@ void request_write()
     for (int i = 1; i <= n_write; i++)
     {
         // Write object and store it in the object array
-        scanf_s("%d %d %d", &object_id, &object_tag, &object_size);
+        scanf_s("%d%d%d", &object_id, &object_size, &object_tag);
         auto obj = write(object_id, object_tag, object_size);
         object[object_id] = obj;
 
@@ -96,12 +136,14 @@ void request_write()
         std::cout << id << '\n';
         for (int i = 1; i <= REP_NUM; i++)
         {
-            std::cout << obj.replica[i] << ' ';
-            for (int j = 1; j <= obj.size - 1; j++)
-                std::cout << obj.unit[i][j] << ' ';
-            std::cout << obj.unit[i][obj.size] << '\n';
+            std::cout << obj.replica[i];
+            for (int j = 1; j <= obj.size; j++)
+                std::cout << ' ' << obj.unit[i][j];
+            std::cout << '\n';
         }
     }
+
+    std::cout.flush();
 }
 
 void request_delete()
@@ -123,6 +165,8 @@ void request_delete()
     {
         std::cout << req << '\n';
     }
+
+    std::cout.flush();
 }
 
 void request_read() {
@@ -134,7 +178,7 @@ void request_read() {
     for (int i = 1; i <= n_read; i++) {
         int object_id;
         int req_id;
-        scanf_s("%d %d", &req_id, &object_id);
+        scanf_s("%d%d", &req_id, &object_id);
 
         req_ids.push_back(req_id);
         object_ids.push_back(object_id);
@@ -154,5 +198,7 @@ void request_read() {
     for (int req : completed_reqs) {
         std::cout << req << '\n';
     }
+
+    std::cout.flush();
 
 }
