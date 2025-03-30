@@ -12,10 +12,6 @@ void make_read_request(int req_id, int object_id) {
     record_request(req_id);
 }
 
-int find_closest_request(int disk_id) {
-    auto& reqs_ = ordered_requests[disk_id];
-
-}
 
 
 std::pair<std::vector<std::string>, ivector> read() {
@@ -66,8 +62,8 @@ std::pair<std::vector<std::string>, ivector> read() {
 
         // Skipping
         if (skip_needed >= G) {
-            action << "j " << skip_needed << "\n";
             disk_point[i] = closest_obj.unit[i_][1];
+            action << "j " << disk_point[i] << "\n";
             actions.push_back(action.str());
             continue;
         }
