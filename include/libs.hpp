@@ -43,7 +43,7 @@ struct Request
 struct Object
 {
     int replica[REP_NUM + 1];
-    int* unit[REP_NUM + 1];
+    ivector unit[REP_NUM + 1];
     int size;
     bool is_delete;
 };
