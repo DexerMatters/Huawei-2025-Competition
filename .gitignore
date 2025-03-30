@@ -12,3 +12,13 @@ code_craft.exe
 code_craft.ilk
 code_craft.pdb
 debug.txt
+result.txt
+
+.idea/
+*.sln
+cmake_install.cmake
+code_craft
+install_manifest.txt
+Makefile
+supermanbo.zip
+test.sh
