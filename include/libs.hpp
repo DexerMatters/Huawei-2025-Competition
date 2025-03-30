@@ -142,7 +142,7 @@ void make_read_request(int req_id, int object_id);
 
 int find_closest_request(int disk_id);
 
-std::pair<std::vector<std::string>, ivector> read();
+void read();
 
 /****************************************************************************************
  * Auxiliary functions

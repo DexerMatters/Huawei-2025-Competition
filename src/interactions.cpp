@@ -190,15 +190,7 @@ void request_read() {
     }
 
     // Process requests
-    auto [actions, completed_reqs] = read();
-    for (auto& action : actions) {
-        std::cout << action;
-    }
-    std::cout << completed_reqs.size() << '\n';
-    for (int req : completed_reqs) {
-        std::cout << req << '\n';
-    }
-
+    read();
     std::cout.flush();
 
 }

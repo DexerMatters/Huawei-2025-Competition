@@ -14,9 +14,8 @@ void make_read_request(int req_id, int object_id) {
 
 
 
-std::pair<std::vector<std::string>, ivector> read() {
+void read() {
     // Preparation
-    std::vector<std::string> actions;
     ivector completed_reqs;
 
     reset_tokens();
@@ -30,14 +29,9 @@ std::pair<std::vector<std::string>, ivector> read() {
         auto reqs = ivector(reqs_.size()); // Copied requests
         std::copy(reqs_.begin(), reqs_.end(), reqs.begin());
 
-        static std::stringstream action;
-        action.str("");
-        action.clear();
-
         if (reqs.empty()) {
             // Do nothing
-            action << "#\n";
-            actions.push_back(action.str());
+            std::cout << "#\n";
             continue;
         }
 
@@ -63,12 +57,11 @@ std::pair<std::vector<std::string>, ivector> read() {
         // Skipping
         if (skip_needed >= G) {
             disk_point[i] = closest_obj.unit[i_][1];
-            action << "j " << disk_point[i] << "\n";
-            actions.push_back(action.str());
+            std::cout << "j " << disk_point[i] << "\n";
             continue;
         }
 
-        action << rep_char('p', skip_needed);
+        std::cout << rep_char('p', skip_needed);
         disk_point[i] = closest_obj.unit[i_][1];
         tokens[i] -= skip_needed;
 
@@ -79,7 +72,7 @@ std::pair<std::vector<std::string>, ivector> read() {
         auto read_req = reqs.begin();
         while (tokens[i] - READING_COSTS[nth] >= 0) {
             // Read Once
-            action << "r";
+            std::cout << "r";
             tokens[i] -= READING_COSTS[nth++];
 
             // Check if the request is completed
@@ -90,6 +83,10 @@ std::pair<std::vector<std::string>, ivector> read() {
             // Next
             disk_point[i] = (disk_point[i] % V) + 1;
             int next_id = data[disk_point[i]];
+            auto next_req = read_req;
+            if (next_req != reqs.end()) {
+                next_req++;
+            }
             if (read_id != next_id && next_id != 0) {
                 // Change request
                 read_req++;
@@ -97,19 +94,25 @@ std::pair<std::vector<std::string>, ivector> read() {
                     break;
                 }
             }
+
             if (reqs_.empty()) {
                 break;
             }
+
             // Update read_id
             read_id = next_id;
         }
 
         // Complete
-        action << "#\n";
-        actions.push_back(action.str());
+        std::cout << "#\n";
     }
 
-    return { actions, completed_reqs };
+    // Print completed requests
+    std::cout << completed_reqs.size() << '\n';
+    for (auto req : completed_reqs) {
+        std::cout << req << '\n';
+    }
+    std::cout.flush();
 }
 
 // Start reading
