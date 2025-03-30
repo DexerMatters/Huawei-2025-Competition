@@ -1,13 +1,1 @@
-CMakePresets.json
-.vscode/
-.vs/
-build/
-CMakeFiles/
-CMakeCache.txt
-docs/
-out/
-
-CMakeSettings.json
-code_craft.exe
-code_craft.ilk
-code_craft.pdb
+/build/*
